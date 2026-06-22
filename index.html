@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3-Tier AWS App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 40px;
+      width: 400px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .logo { text-align: center; margin-bottom: 24px; }
+    .logo h1 { font-size: 22px; color: #e94560; }
+    .logo p { font-size: 13px; color: #aaa; margin-top: 4px; }
+    .tabs { display: flex; margin-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .tab {
+      flex: 1; padding: 10px; text-align: center; cursor: pointer;
+      color: #aaa; font-size: 14px; font-weight: 500;
+      border-bottom: 2px solid transparent; transition: all 0.2s;
+    }
+    .tab.active { color: #e94560; border-bottom-color: #e94560; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; color: #aaa; margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 12px 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px; color: #fff; font-size: 14px;
+    }
+    input:focus { outline: none; border-color: #e94560; }
+    input::placeholder { color: #666; }
+    button {
+      width: 100%; padding: 13px;
+      background: #e94560; border: none;
+      border-radius: 8px; color: #fff;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; margin-top: 8px; transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .msg {
+      text-align: center; font-size: 13px; margin-top: 14px;
+      padding: 10px; border-radius: 6px;
+    }
+    .msg.error { background: rgba(233,69,96,0.15); color: #e94560; }
+    .msg.success { background: rgba(34,197,94,0.15); color: #22c55e; }
+
+    /* Dashboard */
+    .dashboard { display: none; }
+    .dash-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px;
+    }
+    .dash-header h2 { font-size: 18px; }
+    .logout-btn {
+      width: auto; padding: 8px 16px;
+      background: rgba(255,255,255,0.1);
+      font-size: 13px; margin-top: 0;
+    }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 16px;
+    }
+    .stat-card .label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card .value { font-size: 22px; font-weight: 700; color: #e94560; margin-top: 4px; }
+    .user-badge {
+      background: rgba(233,69,96,0.1);
+      border: 1px solid rgba(233,69,96,0.3);
+      border-radius: 8px; padding: 12px 16px;
+      margin-top: 16px; font-size: 13px; color: #ccc;
+    }
+    .user-badge span { color: #e94560; font-weight: 600; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- AUTH SECTION -->
+  <div id="authSection">
+    <div class="logo">
+      <h1>☁️ CloudApp</h1>
+      <p>3-Tier AWS Architecture Demo</p>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('login')">Login</div>
+      <div class="tab" onclick="switchTab('register')">Register</div>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••"/>
+      </div>
+      <button onclick="handleLogin()">Login →</button>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" class="hidden">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="regName" placeholder="Arpit Mungone"/>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="regEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="regPassword" placeholder="Min 6 characters"/>
+      </div>
+      <button onclick="handleRegister()">Create Account →</button>
+    </div>
+
+    <div id="authMsg" class="msg hidden"></div>
+  </div>
+
+  <!-- DASHBOARD SECTION -->
+  <div id="dashSection" class="dashboard">
+    <div class="dash-header">
+      <h2>📊 Dashboard</h2>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="label">Total Users</div>
+        <div class="value" id="statUsers">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Environment</div>
+        <div class="value" id="statEnv" style="font-size:14px;margin-top:8px;">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Database</div>
+        <div class="value" id="statDb" style="font-size:13px;margin-top:8px;">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Version</div>
+        <div class="value" id="statVer">—</div>
+      </div>
+    </div>
+    <div class="user-badge">
+      Logged in as: <span id="dashEmail">—</span>
+    </div>
+    <div id="dashMsg" class="msg hidden"></div>
+  </div>
+
+</div>
+
+<script>
+  // ⚠️ REPLACE THIS with your Elastic Beanstalk URL after deployment
+  const API_BASE = "http://3tier-prod.eba-k7cmgp8d.ap-south-1.elasticbeanstalk.com";
+
+  let authToken = localStorage.getItem("token") || null;
+
+  // Auto-load dashboard if token exists
+  if (authToken) loadDashboard();
+
+  function switchTab(tab) {
+    document.querySelectorAll(".tab").forEach((t, i) => t.classList.toggle("active", i === (tab === "login" ? 0 : 1)));
+    document.getElementById("loginForm").classList.toggle("hidden", tab !== "login");
+    document.getElementById("registerForm").classList.toggle("hidden", tab !== "register");
+    clearMsg("authMsg");
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = `msg ${type}`;
+  }
+
+  function clearMsg(id) {
+    const el = document.getElementById(id);
+    el.className = "msg hidden";
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    if (!email || !password) return showMsg("authMsg", "Please fill all fields", "error");
+    try {
+      const res = await fetch(`${API_BASE}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        authToken = data.token;
+        localStorage.setItem("token", authToken);
+        loadDashboard();
+      } else {
+        showMsg("authMsg", data.error || "Login failed", "error");
+      }
+    } catch (e) {
+      showMsg("authMsg", "Cannot connect to backend. Check API_BASE URL.", "error");
+    }
+  }
+
+  async function handleRegister() {
+    const name = document.getElementById("regName").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value;
+    if (!name || !email || !password) return showMsg("authMsg", "Please fill all fields", "error");
+    try {
+      const res = await fetch(`${API_BASE}/api/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        authToken = data.token;
+        localStorage.setItem("token", authToken);
+        loadDashboard();
+      } else {
+        showMsg("authMsg", data.error || "Registration failed", "error");
+      }
+    } catch (e) {
+      showMsg("authMsg", "Cannot connect to backend. Check API_BASE URL.", "error");
+    }
+  }
+
+  async function loadDashboard() {
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard`, {
+        headers: { "Authorization": `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById("authSection").style.display = "none";
+        document.getElementById("dashSection").style.display = "block";
+        document.getElementById("dashEmail").textContent = data.user;
+        document.getElementById("statUsers").textContent = data.stats.total_users;
+        document.getElementById("statEnv").textContent = data.stats.environment;
+        document.getElementById("statDb").textContent = data.stats.database;
+        document.getElementById("statVer").textContent = data.stats.app_version;
+      } else {
+        logout();
+      }
+    } catch (e) {
+      showMsg("dashMsg", "Error loading dashboard", "error");
+    }
+  }
+
+  function logout() {
+    authToken = null;
+    localStorage.removeItem("token");
+    document.getElementById("authSection").style.display = "block";
+    document.getElementById("dashSection").style.display = "none";
+  }
+</script>
+</body>
+</html>
